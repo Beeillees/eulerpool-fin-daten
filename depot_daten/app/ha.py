@@ -66,6 +66,15 @@ def state_exists(entity_id):
         return False
 
 
+def delete_state(entity_id):
+    """Entfernt einen Zustand ohne Registereintrag (Reste der Probe-Version 0.1)."""
+    try:
+        _req(f"{CORE}/states/{entity_id}", method="DELETE")
+        return True
+    except Exception:
+        return False
+
+
 def set_input_text(entity_id, value):
     try:
         _req(f"{CORE}/services/input_text/set_value", {"entity_id": entity_id, "value": value[:255]})

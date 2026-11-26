@@ -77,6 +77,13 @@ class App:
         self.overrides = parse_overrides(opts.get("isin_zuordnung"))
         self.known = set(load_json(LAST_FILE, {}).keys())
         self.retry_at = 0.0
+        if not self.usage.get("probe_aufgeraeumt"):
+            for e in ("sensor.depotdaten_status", "sensor.depotdaten_probe_nvda", "sensor.depotdaten_probe_us67066g1040",
+                      "sensor.depotdaten_probe_sap", "sensor.depotdaten_probe_de0007164600",
+                      "sensor.depotdaten_probe_rklb"):
+                ha.delete_state(e)
+            self.usage.set("probe_aufgeraeumt", True)
+            self.usage.save()
         self.mq = ha.Mqtt(self.on_command)
         time.sleep(2)
         self.announce_fixed()
