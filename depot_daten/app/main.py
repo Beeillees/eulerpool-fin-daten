@@ -26,7 +26,7 @@ import verlauf
 from eulerpool import Eulerpool
 from usage import Usage
 
-VERSION = "0.3.1"
+VERSION = "0.3.2"
 OPTIONS_FILE = Path("/data/options.json")
 CACHE_FILE = Path("/data/isin_cache.json")
 LAST_FILE = Path("/data/last_results.json")
@@ -241,7 +241,7 @@ class App:
             if new or full or not verlauf.OUT.exists():
                 verlauf.save(d)
             if full:
-                info["url_erreichbar"] = verlauf.check_local_url()
+                info["url_erreichbar"], info["url_info"] = verlauf.check_local_url()
             first = min((r[0][0] for r in d["kurse"].values() if r), default=None)
             info.update(positionen=len(keys), symbole=len(d["kurse"]), buchungen=len(d["buchungen"]),
                         kurse_ab=first, tage=sum(len(v) for v in d["kurse"].values()),

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.2
+- Erreichbarkeitsprüfung des Tagebuchs auch über https, mit Grund im Attribut `url_info`.
+
 ## 0.3.1
 - Tagebuch: Kurse erst ab 2023 behalten (kleinere Datei), nachgefüllte Eulerpool-Kurse vor unplausiblen Tagessprüngen (unbereinigte Splits) verwerfen.
 

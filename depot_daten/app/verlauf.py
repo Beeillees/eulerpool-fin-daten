@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import re
+import urllib.error
 import urllib.request
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -262,9 +263,21 @@ def update_holdings(d, snap, keys):
 
 
 def check_local_url():
-    """Ist /local/ erreichbar? (Nur wenn der Ordner www beim HA-Start existierte.)"""
-    try:
-        with urllib.request.urlopen("http://homeassistant:8123/local/depot-daten/verlauf.json", timeout=10) as r:
-            return r.status == 200
-    except Exception:
-        return False
+    """Ist /local/ erreichbar? (Nur wenn der Ordner www beim HA-Start existierte.) Gibt (ok, Info) zurück."""
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE   # nur interne Erreichbarkeitsprüfung, es werden keine Daten gesendet
+    errs = []
+    for url in ("http://homeassistant:8123/local/depot-daten/verlauf.json",
+                "https://homeassistant:8123/local/depot-daten/verlauf.json"):
+        try:
+            with urllib.request.urlopen(url, timeout=10, context=ctx if url.startswith("https") else None) as r:
+                if r.status == 200:
+                    return True, url.split(":")[0]
+                errs.append(f"{url.split(':')[0]}: HTTP {r.status}")
+        except urllib.error.HTTPError as e:
+            errs.append(f"{url.split(':')[0]}: HTTP {e.code}")
+        except Exception as e:
+            errs.append(f"{url.split(':')[0]}: {type(e).__name__}")
+    return False, "; ".join(errs)
