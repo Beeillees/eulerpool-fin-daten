@@ -26,7 +26,7 @@ import verlauf
 from eulerpool import Eulerpool
 from usage import Usage
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 OPTIONS_FILE = Path("/data/options.json")
 CACHE_FILE = Path("/data/isin_cache.json")
 LAST_FILE = Path("/data/last_results.json")

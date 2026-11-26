@@ -49,7 +49,34 @@ def load():
     return {"version": 1, "kurse": {}, "quellen": {}, "bestand": {}, "buchungen": []}
 
 
+KEEP_FROM = "2023-01-01"   # älter braucht die Karte nicht (erste Käufe 2023)
+
+
+def sanitize(d):
+    """Alte Kurse abschneiden; Eulerpool-Nachfüllung bis zum letzten unplausiblen Tagessprung verwerfen
+    (unbereinigte Splits). Yahoo-Tage bleiben immer."""
+    for sym, rows in d["kurse"].items():
+        rows = [r for r in rows if r[0] >= KEEP_FROM]
+        q = d["quellen"].get(sym, {})
+        ep_bis = q.get("eulerpool_bis")
+        if ep_bis:
+            cut = None
+            for a, b in zip(rows, rows[1:]):
+                if b[0] > ep_bis:
+                    break
+                ratio = b[1] / a[1] if a[1] else 1
+                if ratio > 1.8 or ratio < 0.55:
+                    cut = b[0]
+            if cut:
+                rows = [r for r in rows if r[0] >= cut or r[0] > ep_bis]
+                q["eulerpool_gekuerzt_ab"] = cut
+            if not any(r[0] <= ep_bis for r in rows):
+                q.pop("eulerpool_bis", None)
+        d["kurse"][sym] = rows
+
+
 def save(d):
+    sanitize(d)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     d["aktualisiert"] = datetime.now().astimezone().isoformat(timespec="seconds")
     tmp = OUT.with_suffix(".tmp")

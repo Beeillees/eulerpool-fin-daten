@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.1
+- Tagebuch: Kurse erst ab 2023 behalten (kleinere Datei), nachgefüllte Eulerpool-Kurse vor unplausiblen Tagessprüngen (unbereinigte Splits) verwerfen.
+
 ## 0.3.0
 - Depot-Tagebuch `/config/www/depot-daten/verlauf.json` (im Browser `/local/depot-daten/verlauf.json`):
   Tageskurse aller Depot-Positionen (aus Easy Stock/Yahoo, wächst dauerhaft weiter), einmalige
