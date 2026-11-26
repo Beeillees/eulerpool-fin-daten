@@ -25,7 +25,7 @@ import titles
 from eulerpool import Eulerpool
 from usage import Usage
 
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 OPTIONS_FILE = Path("/data/options.json")
 CACHE_FILE = Path("/data/isin_cache.json")
 LAST_FILE = Path("/data/last_results.json")

@@ -176,6 +176,8 @@ def eps_info(est, cal, today):
             break
     if len(quarters) == 4 and (to_date(quarters[0]["date"]) - to_date(quarters[3]["date"])).days <= 400:
         out["eps_ttm"] = sum(num(r["epsActual"]) for r in quarters)
+    out["eps_quartale"] = [f"{to_date(r['date']).isoformat()} {num(r.get('epsActual'))} "
+                           f"(Q{r.get('quarter', '?')}/{r.get('year', '?')})" for r in done[-8:]]
     if done:
         r = done[-1]
         act, est_ = num(r.get("epsActual")), num(r.get("epsEstimate"))
