@@ -25,7 +25,7 @@ import titles
 from eulerpool import Eulerpool
 from usage import Usage
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 OPTIONS_FILE = Path("/data/options.json")
 CACHE_FILE = Path("/data/isin_cache.json")
 LAST_FILE = Path("/data/last_results.json")
@@ -130,9 +130,14 @@ class App:
             "monatslimit": self.limit,
             "verbraucht_pct": round(self.usage.month / self.limit * 100, 2) if self.limit else None,
             "verlauf": self.usage.history,
-            "eulerpool_limit": rate.get("limit"), "eulerpool_reset": rate.get("reset")})
+            "eulerpool_limit": rate.get("limit")})
+        reset = rate.get("reset")
+        try:
+            reset = datetime.fromtimestamp(int(reset)).astimezone().isoformat(timespec="minutes")
+        except (TypeError, ValueError, OSError):
+            pass
         self.mq.state("abrufe_rest", rest if rest not in (None, "") else None,
-                      {"limit": rate.get("limit"), "reset": rate.get("reset"),
+                      {"limit": rate.get("limit"), "zuruecksetzen_am": reset,
                        "hinweis": "Werte aus den X-RateLimit-Antwortköpfen von Eulerpool"})
         self.usage.save()
 

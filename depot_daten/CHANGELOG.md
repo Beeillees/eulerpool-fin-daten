@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+- KGV: doppelt geführte Quartale werden nicht mehr doppelt gezählt (Termine mind. 60 Tage auseinander).
+- Alter Analysten-Konsens und veraltetes Kursziel werden in der Zeile als „alt MM/JJ“ markiert.
+- US-ADR deutscher Titel über ihr Kürzel (BAYRY, HDELY, …) finden.
+- Zurücksetzdatum des Eulerpool-Limits lesbar.
+
 ## 0.2.0
 - Grundversion: findet alle Sensoren mit Label `beobachtungsliste` oder `depot_einzelaktie` selbst,
   holt täglich (Standard 05:00) Kursziel, Analysten-Konsens, Hoch-/Herabstufungen, Gewinnschätzungen,

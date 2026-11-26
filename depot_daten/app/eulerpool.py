@@ -29,7 +29,7 @@ class Eulerpool:
         sep = "&" if "?" in path else "?"
         url = BASE + path + sep + urllib.parse.urlencode(params)
         req = urllib.request.Request(url, headers={"Accept": "application/json",
-                                                   "User-Agent": "ha-depot-daten/0.2"})
+                                                   "User-Agent": "ha-depot-daten/0.2.1"})
         status, body, headers = 0, b"", {}
         for attempt in range(3):
             try:

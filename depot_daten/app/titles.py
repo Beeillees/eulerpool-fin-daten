@@ -17,6 +17,10 @@ ISIN = {
 SKIP = {"ANT": "nicht börsennotiert", "SPCX": "nicht börsennotiert", "WTIC.DE": "Rohstoff-ETC"}
 
 STALE_DAYS = 120
+# US-ADR deutscher Titel (Ersatz, wenn das Kursziel der Heimatbörse veraltet ist)
+ADR_TICKER = {"SAP.DE": "SAP", "BAYN.DE": "BAYRY", "HEI.DE": "HDELY", "SIE.DE": "SIEGY", "ALV.DE": "ALIZY",
+              "BAS.DE": "BASFY", "DTE.DE": "DTEGY", "MBG.DE": "MBGYY", "BMW.DE": "BMWYY", "VOW3.DE": "VWAGY",
+              "IFX.DE": "IFNNY", "ADS.DE": "ADDYY", "RHM.DE": "RNMBY", "MUV2.DE": "MURGY"}
 CUR_SIGN = {"USD": "$", "EUR": "€", "GBP": "£", "CHF": "CHF"}
 
 
@@ -162,8 +166,16 @@ def eps_info(est, cal, today):
     q = [r for r in lst(cal) if isinstance(r, dict) and to_date(r.get("date"))]
     q.sort(key=lambda r: to_date(r["date"]))
     done = [r for r in q if num(r.get("epsActual")) is not None and to_date(r["date"]) <= today]
-    if len(done) >= 4:
-        out["eps_ttm"] = sum(num(r["epsActual"]) for r in done[-4:])
+    # Eulerpool führt manche Quartale doppelt (z. B. vorläufig + endgültig): rückwärts nur Termine
+    # nehmen, die mindestens 60 Tage auseinanderliegen
+    quarters = []
+    for r in reversed(done):
+        if not quarters or (to_date(quarters[-1]["date"]) - to_date(r["date"])).days >= 60:
+            quarters.append(r)
+        if len(quarters) == 4:
+            break
+    if len(quarters) == 4 and (to_date(quarters[0]["date"]) - to_date(quarters[3]["date"])).days <= 400:
+        out["eps_ttm"] = sum(num(r["epsActual"]) for r in quarters)
     if done:
         r = done[-1]
         act, est_ = num(r.get("epsActual")), num(r.get("epsEstimate"))
@@ -324,11 +336,16 @@ def adr_target(api, t, cache):
     isin = cache.get(key, "?")
     if isin == "?":
         isin = None
-        name = (t.get("long_name") or t.get("name") or "").split(" ")[0]
-        _, data = api.get("equity/search", q=name)
-        for r in lst(data, "results"):
-            if "ADR" in str(r.get("name", "")).upper() and r.get("currency") == "USD":
-                isin = r.get("isin")
+        adr = ADR_TICKER.get(t.get("symbol") or "")
+        queries = ([adr] if adr else []) + [(t.get("long_name") or t.get("name") or "").split(" ")[0]]
+        for qy in queries:
+            _, data = api.get("equity/search", q=qy)
+            for r in lst(data, "results"):
+                if r.get("currency") == "USD" and str(r.get("isin", "")).startswith("US") and (
+                        (adr and str(r.get("ticker", "")).upper() == adr) or "ADR" in str(r.get("name", "")).upper()):
+                    isin = r.get("isin")
+                    break
+            if isin:
                 break
         cache[key] = isin
     if not isin:
@@ -451,6 +468,16 @@ def evaluate(api, t, isin, raw, cache, today):
     out.update(insider_us(raw.get("ins"), today) if isin.startswith("US") else insider_eu(raw.get("ins"), today))
     out.update(grades_info(raw.get("grades"), today))
     out.update(dividends_info(raw.get("div"), price, today))
+    if cons and cons.get("monat"):
+        try:
+            cm = date.fromisoformat(cons["monat"] + "-01")
+            if (today - cm).days > STALE_DAYS + 31:
+                cons["alt"] = True
+                info.append(f"Analysten-Konsens vom {cm.strftime('%m/%y')} (alt)")
+        except ValueError:
+            pass
+    if stale and tg and tg.get("stand"):
+        out["kursziel_alt"] = True
     out["hinweise"] = hints + info
     out["pruefen"] = bool(hints)
     out["kennzahlen"] = kennzahlen_line(out, sign, today)
@@ -466,9 +493,12 @@ def kennzahlen_line(o, sign, today):
     if o.get("fkgv"):
         parts.append(f"fKGV {de(o['fkgv'])}")
     if o.get("kursziel"):
-        parts.append(f"Ziel {de(o['kursziel'])} {sign} ({pct(o.get('abstand_pct'))} %)")
+        alt = f" alt {date.fromisoformat(o['kursziel_stand']).strftime('%m/%y')}" if o.get("kursziel_alt") else ""
+        parts.append(f"Ziel {de(o['kursziel'])} {sign} ({pct(o.get('abstand_pct'))} %){alt}")
     if o.get("konsens"):
-        parts.append(f"Konsens {o['konsens']} ({o['analysten']['anzahl']})")
+        a = o["analysten"]
+        alt = f", alt {date.fromisoformat(a['monat'] + '-01').strftime('%m/%y')}" if a.get("alt") else ""
+        parts.append(f"Konsens {o['konsens']} ({a['anzahl']}{alt})")
     if o.get("short_quote_pct") is not None:
         parts.append(f"Short {de(o['short_quote_pct'], 1)} %")
     if o.get("naechste_zahlen"):
