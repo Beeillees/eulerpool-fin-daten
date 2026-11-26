@@ -1,6 +1,15 @@
 # Changelog
 
+## 0.2.0
+- Grundversion: findet alle Sensoren mit Label `beobachtungsliste` oder `depot_einzelaktie` selbst,
+  holt täglich (Standard 05:00) Kursziel, Analysten-Konsens, Hoch-/Herabstufungen, Gewinnschätzungen,
+  Quartalstermine, Kursverlauf, Dividenden, Splits, Insider (US/BaFin) und Leerverkäufe (US).
+- KGV und erwartetes KGV selbst gerechnet (Eulerpool liefert dort 0).
+- Kursziel = Median (robuster gegen Ausreißer); bei veraltetem Ziel deutscher Titel: Abstand der US-ADR.
+- Plausibilitätsprüfung mit Hinweisen (veraltet, Split, Kursabweichung, Ziel sehr weit weg).
+- Sensoren per MQTT: `sensor.depotdaten_<titel>`, Status, Abrufe heute/Monat/übrig, letzter Lauf,
+  Knopf „Jetzt aktualisieren“.
+- Schreibt die Kennzahlen-Zeile in `input_text.watchlist_<titel>_kennzahlen`.
+
 ## 0.1.0
-- Erste Version: Prüfmodus. Ruft alle infrage kommenden Eulerpool-Abrufe für ein paar Titel einmal auf,
-  speichert die Antworten unter /share/depot-daten/probe/ und fasst das Ergebnis im Sensor
-  sensor.depotdaten_probe_<titel> zusammen.
+- Prüfmodus: alle Eulerpool-Abrufe für ein paar Titel einmal aufrufen.
