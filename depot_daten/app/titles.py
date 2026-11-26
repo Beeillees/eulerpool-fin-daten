@@ -176,6 +176,11 @@ def eps_info(est, cal, today):
             break
     if len(quarters) == 4 and (to_date(quarters[0]["date"]) - to_date(quarters[3]["date"])).days <= 400:
         out["eps_ttm"] = sum(num(r["epsActual"]) for r in quarters)
+        vals = sorted(num(r["epsActual"]) for r in quarters)
+        med = (vals[1] + vals[2]) / 2
+        big = [r for r in quarters if med > 0 and num(r["epsActual"]) > 1.8 * med]
+        if big:
+            out["eps_sondereffekt"] = ", ".join(f"Q{r.get('quarter', '?')}/{r.get('year', '?')}" for r in reversed(big))
     out["eps_quartale"] = [f"{to_date(r['date']).isoformat()} {num(r.get('epsActual'))} "
                            f"(Q{r.get('quarter', '?')}/{r.get('year', '?')})" for r in done[-8:]]
     if done:
@@ -470,6 +475,8 @@ def evaluate(api, t, isin, raw, cache, today):
     out.update(insider_us(raw.get("ins"), today) if isin.startswith("US") else insider_eu(raw.get("ins"), today))
     out.update(grades_info(raw.get("grades"), today))
     out.update(dividends_info(raw.get("div"), price, today))
+    if e.get("eps_sondereffekt"):
+        info.append(f"KGV durch ungewöhnlich hohen Gewinn in {e['eps_sondereffekt']} gedrückt – erwartetes KGV aussagekräftiger")
     if cons and cons.get("monat"):
         try:
             cm = date.fromisoformat(cons["monat"] + "-01")
@@ -489,7 +496,7 @@ def evaluate(api, t, isin, raw, cache, today):
 def kennzahlen_line(o, sign, today):
     parts = []
     if o.get("kgv"):
-        parts.append(f"KGV {de(o['kgv'])}")
+        parts.append(f"KGV {de(o['kgv'])}" + (" (Sondereffekt)" if o.get("eps_sondereffekt") else ""))
     elif o.get("verlust"):
         parts.append("KGV n. a. (Verlust)")
     if o.get("fkgv"):

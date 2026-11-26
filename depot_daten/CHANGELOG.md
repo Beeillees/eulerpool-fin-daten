@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+- KGV mit Sondereffekt erkennen (ein Quartal > 1,8 × Median der letzten vier) und als „(Sondereffekt)“ kennzeichnen.
+- Attribut `eps_quartale`: die letzten acht Quartalsgewinne zum Nachprüfen.
+
 ## 0.2.1
 - KGV: doppelt geführte Quartale werden nicht mehr doppelt gezählt (Termine mind. 60 Tage auseinander).
 - Alter Analysten-Konsens und veraltetes Kursziel werden in der Zeile als „alt MM/JJ“ markiert.
