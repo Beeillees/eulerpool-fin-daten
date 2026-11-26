@@ -26,5 +26,11 @@ werden übersprungen.
 - `sensor.depotdaten_abrufe_heute`, `sensor.depotdaten_abrufe_monat`, `sensor.depotdaten_abrufe_rest`
 - `button.depotdaten_aktualisieren`
 
+## Depot-Tagebuch
+Die App speichert täglich die Schlusskurse aller Positionen der Depot-Karte und die Bestände in
+`/config/www/depot-daten/verlauf.json` (Teil jedes HA-Backups). Ändert sich eine Stückzahl
+(`input_number.depot_<key>_stuck` / `_einstand`), wird das als Buchung mit Datum festgehalten.
+Die Datei wird nur ergänzt, nie gekürzt.
+
 ## Verbrauch
 Etwa 12 Abrufe pro Titel und Tag (deutsche Titel mit veraltetem Kursziel 3–4 mehr).

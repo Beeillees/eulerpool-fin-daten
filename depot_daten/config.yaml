@@ -1,5 +1,5 @@
 name: Depot-Daten
-version: "0.2.3"
+version: "0.3.0"
 slug: depot_daten
 description: Holt täglich Kennzahlen, Kursziele, Analysten, Leerverkäufe, Insider und Termine von Eulerpool für Depot- und Beobachtungstitel.
 url: https://github.com/Beeillees/eulerpool-fin-daten
@@ -14,7 +14,7 @@ services:
   - mqtt:need
 map:
   - share:rw
-  - homeassistant_config:ro
+  - homeassistant_config:rw
 options:
   token: ""
   uhrzeit: "05:00"

@@ -22,10 +22,11 @@ from pathlib import Path
 
 import ha
 import titles
+import verlauf
 from eulerpool import Eulerpool
 from usage import Usage
 
-VERSION = "0.2.3"
+VERSION = "0.3.0"
 OPTIONS_FILE = Path("/data/options.json")
 CACHE_FILE = Path("/data/isin_cache.json")
 LAST_FILE = Path("/data/last_results.json")
@@ -77,6 +78,7 @@ class App:
         self.overrides = parse_overrides(opts.get("isin_zuordnung"))
         self.known = set(load_json(LAST_FILE, {}).keys())
         self.retry_at = 0.0
+        self.journal_info = {}
         if not self.usage.get("probe_aufgeraeumt"):
             for e in ("sensor.depotdaten_status", "sensor.depotdaten_probe_nvda", "sensor.depotdaten_probe_us67066g1040",
                       "sensor.depotdaten_probe_sap", "sensor.depotdaten_probe_de0007164600",
@@ -110,6 +112,7 @@ class App:
         m.sensor("letzter_lauf", "Letzter Abruf", "mdi:clock-check-outline", device_class="timestamp",
                  attrs=False)
         m.button("aktualisieren", "Jetzt aktualisieren", "mdi:refresh")
+        m.sensor("verlauf", "Depot-Tagebuch", "mdi:book-open-variant", unit="Tageskurse", state_class="measurement")
 
     def republish(self):
         self.announce_fixed()
@@ -149,6 +152,7 @@ class App:
             self.retry_at = time.time() + 1800
             return
         t0 = time.time()
+        self.journal(full=True)
         calls0 = self.usage.month
         today = date.today()
         self.mq.state("status", "läuft", {"version": VERSION, "start": datetime.now().isoformat(timespec="seconds")})
@@ -211,6 +215,42 @@ class App:
         log.info("Fertig: %d Titel, %d Abrufe, %d ohne Daten, %d mit Hinweis, %d Fehler",
                  len(results), self.usage.month - calls0, len(skipped), len(flagged), len(errors))
 
+    # ---------- Depot-Tagebuch ----------
+    def journal(self, full=False):
+        """full: Tageskurse übernehmen (+ einmalige Nachfüllung); sonst nur Bestände prüfen."""
+        try:
+            pos = verlauf.positions()
+            if not pos:
+                log.warning("Tagebuch: keine Depot-Karte mit Positionen gefunden")
+                return
+            keys = [p["key"] for p in pos]
+            d = verlauf.load()
+            new = verlauf.update_holdings(d, verlauf.holdings_snapshot(), keys)
+            for n in new:
+                log.info("Tagebuch: Buchung erkannt – %s", n)
+            info = self.journal_info
+            if full:
+                syms = list(dict.fromkeys([p["symbol"] for p in pos] + verlauf.EXTRA_SYMBOLS))
+                info["kurse"] = verlauf.update_prices(d, syms)
+                if self.api.token:
+                    rep = verlauf.backfill(d, self.api, syms)
+                    if rep:
+                        info["nachfuellung"] = rep
+                        for k, v in rep.items():
+                            log.info("Tagebuch Nachfüllung %-8s %s", k, v)
+            if new or full or not verlauf.OUT.exists():
+                verlauf.save(d)
+            if full:
+                info["url_erreichbar"] = verlauf.check_local_url()
+            first = min((r[0][0] for r in d["kurse"].values() if r), default=None)
+            info.update(positionen=len(keys), symbole=len(d["kurse"]), buchungen=len(d["buchungen"]),
+                        kurse_ab=first, tage=sum(len(v) for v in d["kurse"].values()),
+                        letzte_buchungen=[f"{b[0]} {b[1]} {b[2]:+g} Stk {b[3]:+.2f} €" for b in d["buchungen"][-5:]],
+                        stand=datetime.now().astimezone().isoformat(timespec="seconds"))
+            self.mq.state("verlauf", info["tage"], info)
+        except Exception:
+            log.exception("Tagebuch fehlgeschlagen")
+
     def due(self):
         if time.time() < self.retry_at:
             return False
@@ -229,7 +269,12 @@ def main():
                         format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
     log.info("Depot-Daten %s startet", VERSION)
     app = App(opts)
+    app.journal(full=False)
+    last_check = time.time()
     while True:
+        if time.time() - last_check > 600:
+            last_check = time.time()
+            app.journal(full=False)
         if run_now.is_set() or app.due():
             run_now.clear()
             try:

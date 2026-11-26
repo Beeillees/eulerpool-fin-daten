@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+- Depot-Tagebuch `/config/www/depot-daten/verlauf.json` (im Browser `/local/depot-daten/verlauf.json`):
+  Tageskurse aller Depot-Positionen (aus Easy Stock/Yahoo, wächst dauerhaft weiter), einmalige
+  Nachfüllung älterer Tageskurse über Eulerpool (nur wenn sie sich mit Yahoo decken), Bestände je Tag.
+- Erkennt Käufe/Verkäufe (Sparplan, Abgleich, Handeingabe) alle 10 Minuten an den Stückzahl-/Einstand-
+  Helfern und bucht sie mit Datum. Die Depot-Karte nutzt das für Verlauf und Kaufjahre.
+- Sensor `sensor.depotdaten_verlauf` (Anzahl gespeicherter Tageskurse, Buchungen, Nachfüllung).
+- Zugriff auf `/config` jetzt mit Schreibrecht (nur für `www/depot-daten/`).
+
 ## 0.2.3
 - KGV mit Sondereffekt erkennen (ein Quartal > 1,8 × Median der letzten vier) und als „(Sondereffekt)“ kennzeichnen.
 - Attribut `eps_quartale`: die letzten acht Quartalsgewinne zum Nachprüfen.
