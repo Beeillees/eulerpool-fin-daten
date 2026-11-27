@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.4
+- Zurück zum eigenen Zähler: Die X-RateLimit-Köpfe von Eulerpool ändern sich nicht und spiegeln den abgerechneten Verbrauch nicht wider. Sensor „Abrufe übrig“ entfernt. Verbindlich ist das Eulerpool-Dashboard.
+
 ## 0.3.3
 - Abrufe heute/Monat jetzt so, wie Eulerpool abrechnet (aus den X-RateLimit-Köpfen: Limit − Rest, Tag = Rest bei Tagesbeginn − Rest jetzt). Der eigene Zähler bleibt als Attribut `app_zaehler_*`.
 

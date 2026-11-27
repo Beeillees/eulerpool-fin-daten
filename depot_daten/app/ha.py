@@ -15,7 +15,7 @@ DISC = "homeassistant"
 BASE_T = "depotdaten"
 AVAIL = f"{BASE_T}/verfuegbar"
 DEVICE = {"identifiers": ["depot_daten"], "name": "Depot-Daten", "manufacturer": "Eulerpool",
-          "model": "Depot-Daten App", "sw_version": "0.3.3"}
+          "model": "Depot-Daten App", "sw_version": "0.3.4"}
 
 TITLES_TEMPLATE = """{% set ns = namespace(o=[]) %}
 {% for lab in LABELS %}{% for e in label_entities(lab) %}{% if e.startswith('sensor.') %}

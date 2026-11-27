@@ -26,7 +26,7 @@ import verlauf
 from eulerpool import Eulerpool
 from usage import Usage
 
-VERSION = "0.3.3"
+VERSION = "0.3.4"
 OPTIONS_FILE = Path("/data/options.json")
 CACHE_FILE = Path("/data/isin_cache.json")
 LAST_FILE = Path("/data/last_results.json")
@@ -107,8 +107,6 @@ class App:
                  attrs=False)
         m.sensor("abrufe_monat", "Abrufe diesen Monat", "mdi:chart-donut", unit="Abrufe",
                  state_class="measurement")
-        m.sensor("abrufe_rest", "Abrufe übrig (Eulerpool)", "mdi:battery-charging-medium", unit="Abrufe",
-                 state_class="measurement")
         m.sensor("letzter_lauf", "Letzter Abruf", "mdi:clock-check-outline", device_class="timestamp",
                  attrs=False)
         m.button("aktualisieren", "Jetzt aktualisieren", "mdi:refresh")
@@ -126,28 +124,17 @@ class App:
         self.mq.sensor(key, name, "mdi:chart-box-outline", unit="%", state_class="measurement")
 
     def publish_usage(self):
-        """Verbrauch so, wie Eulerpool ihn abrechnet (X-RateLimit-Köpfe); eigener Zähler nur als Attribut."""
-        rate = self.api.rate
+        """Abrufe zählt die App selbst. Eulerpool rechnet davon nur einen Teil ab (leere Antworten u. Ä.
+        sind frei); die X-RateLimit-Köpfe ändern sich nicht und taugen nicht als Zähler. Verbindlich ist
+        das Eulerpool-Dashboard."""
         u = self.usage
-        limit = u.get("ep_limit") or self.limit
-        month = u.ep_month if u.ep_month is not None else u.month
-        today = u.ep_today if u.ep_today is not None else u.today
-        quelle = "Eulerpool (X-RateLimit)" if u.ep_month is not None else "App-Zähler (Eulerpool meldet noch nichts)"
-        self.mq.state("abrufe_heute", today)
-        self.mq.state("abrufe_monat", month, {
-            "monatslimit": limit, "quelle": quelle,
-            "verbraucht_pct": round(month / limit * 100, 2) if limit else None,
-            "app_zaehler_monat": u.month, "app_zaehler_heute": u.today,
-            "hinweis": "Eulerpool rechnet leere Antworten und Antworten ohne Treffer nicht ab; der App-Zähler zählt alles",
-            "verlauf_app": u.history})
-        reset = rate.get("reset")
-        try:
-            reset = datetime.fromtimestamp(int(reset)).astimezone().isoformat(timespec="minutes")
-        except (TypeError, ValueError, OSError):
-            pass
-        rest = u.get("ep_remaining")
-        self.mq.state("abrufe_rest", rest, {"limit": limit, "zuruecksetzen_am": reset,
-                                            "hinweis": "Wert aus den X-RateLimit-Antwortköpfen von Eulerpool"})
+        self.mq.state("abrufe_heute", u.today)
+        self.mq.state("abrufe_monat", u.month, {
+            "monatslimit": self.limit, "quelle": "App-Zähler (Obergrenze)",
+            "verbraucht_pct": round(u.month / self.limit * 100, 2) if self.limit else None,
+            "hinweis": "Eulerpool rechnet nur einen Teil dieser Abrufe ab, verbindlich ist eulerpool.com/developers/dashboard",
+            "verlauf": u.history})
+        self.mq.remove("abrufe_rest")
         self.usage.save()
 
     # ---------- Lauf ----------

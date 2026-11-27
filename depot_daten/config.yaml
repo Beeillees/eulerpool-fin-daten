@@ -1,5 +1,5 @@
 name: Depot-Daten
-version: "0.3.3"
+version: "0.3.4"
 slug: depot_daten
 description: Holt täglich Kennzahlen, Kursziele, Analysten, Leerverkäufe, Insider und Termine von Eulerpool für Depot- und Beobachtungstitel.
 url: https://github.com/Beeillees/eulerpool-fin-daten
