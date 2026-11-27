@@ -26,7 +26,7 @@ import verlauf
 from eulerpool import Eulerpool
 from usage import Usage
 
-VERSION = "0.3.2"
+VERSION = "0.3.3"
 OPTIONS_FILE = Path("/data/options.json")
 CACHE_FILE = Path("/data/isin_cache.json")
 LAST_FILE = Path("/data/last_results.json")
@@ -126,22 +126,28 @@ class App:
         self.mq.sensor(key, name, "mdi:chart-box-outline", unit="%", state_class="measurement")
 
     def publish_usage(self):
+        """Verbrauch so, wie Eulerpool ihn abrechnet (X-RateLimit-Köpfe); eigener Zähler nur als Attribut."""
         rate = self.api.rate
-        rest = rate.get("remaining")
-        self.mq.state("abrufe_heute", self.usage.today)
-        self.mq.state("abrufe_monat", self.usage.month, {
-            "monatslimit": self.limit,
-            "verbraucht_pct": round(self.usage.month / self.limit * 100, 2) if self.limit else None,
-            "verlauf": self.usage.history,
-            "eulerpool_limit": rate.get("limit")})
+        u = self.usage
+        limit = u.get("ep_limit") or self.limit
+        month = u.ep_month if u.ep_month is not None else u.month
+        today = u.ep_today if u.ep_today is not None else u.today
+        quelle = "Eulerpool (X-RateLimit)" if u.ep_month is not None else "App-Zähler (Eulerpool meldet noch nichts)"
+        self.mq.state("abrufe_heute", today)
+        self.mq.state("abrufe_monat", month, {
+            "monatslimit": limit, "quelle": quelle,
+            "verbraucht_pct": round(month / limit * 100, 2) if limit else None,
+            "app_zaehler_monat": u.month, "app_zaehler_heute": u.today,
+            "hinweis": "Eulerpool rechnet leere Antworten und Antworten ohne Treffer nicht ab; der App-Zähler zählt alles",
+            "verlauf_app": u.history})
         reset = rate.get("reset")
         try:
             reset = datetime.fromtimestamp(int(reset)).astimezone().isoformat(timespec="minutes")
         except (TypeError, ValueError, OSError):
             pass
-        self.mq.state("abrufe_rest", rest if rest not in (None, "") else None,
-                      {"limit": rate.get("limit"), "zuruecksetzen_am": reset,
-                       "hinweis": "Werte aus den X-RateLimit-Antwortköpfen von Eulerpool"})
+        rest = u.get("ep_remaining")
+        self.mq.state("abrufe_rest", rest, {"limit": limit, "zuruecksetzen_am": reset,
+                                            "hinweis": "Wert aus den X-RateLimit-Antwortköpfen von Eulerpool"})
         self.usage.save()
 
     # ---------- Lauf ----------

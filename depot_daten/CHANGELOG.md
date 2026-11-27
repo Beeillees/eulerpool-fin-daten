@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.3
+- Abrufe heute/Monat jetzt so, wie Eulerpool abrechnet (aus den X-RateLimit-Köpfen: Limit − Rest, Tag = Rest bei Tagesbeginn − Rest jetzt). Der eigene Zähler bleibt als Attribut `app_zaehler_*`.
+
 ## 0.3.2
 - Erreichbarkeitsprüfung des Tagebuchs auch über https, mit Grund im Attribut `url_info`.
 

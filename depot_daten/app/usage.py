@@ -35,6 +35,34 @@ class Usage:
         self.d["day_calls"] = self.d.get("day_calls", 0) + (1 if counted else 0)
         self.d["total_calls"] = self.d.get("total_calls", 0) + 1
 
+    def rate_update(self, limit, remaining):
+        """Stand laut Eulerpool (X-RateLimit-Köpfe). Tagesverbrauch = Rest bei Tagesbeginn − Rest jetzt."""
+        try:
+            limit, remaining = int(limit), int(remaining)
+        except (TypeError, ValueError):
+            return
+        self._roll()
+        day = self.d.get("day")
+        if self.d.get("ep_day") != day:
+            # erster Wert des Tages: Rest vom Vortag als Startwert (sonst der aktuelle)
+            self.d["ep_day"] = day
+            self.d["ep_day_start"] = self.d.get("ep_remaining", remaining)
+        if remaining > self.d.get("ep_day_start", remaining):   # neuer Monat: Kontingent wieder voll
+            self.d["ep_day_start"] = limit
+        self.d["ep_limit"], self.d["ep_remaining"] = limit, remaining
+
+    @property
+    def ep_month(self):
+        if self.d.get("ep_limit") is None or self.d.get("ep_remaining") is None:
+            return None
+        return self.d["ep_limit"] - self.d["ep_remaining"]
+
+    @property
+    def ep_today(self):
+        if self.d.get("ep_day") != self.d.get("day") or self.d.get("ep_remaining") is None:
+            return 0 if self.d.get("ep_remaining") is not None else None
+        return max(0, self.d.get("ep_day_start", self.d["ep_remaining"]) - self.d["ep_remaining"])
+
     def save(self):
         try:
             self.path.write_text(json.dumps(self.d))

@@ -62,3 +62,5 @@ class Eulerpool:
         for key in ("x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset"):
             if key in low:
                 self.rate[key.replace("x-ratelimit-", "")] = low[key]
+        if "x-ratelimit-remaining" in low:
+            self.usage.rate_update(low.get("x-ratelimit-limit"), low.get("x-ratelimit-remaining"))
